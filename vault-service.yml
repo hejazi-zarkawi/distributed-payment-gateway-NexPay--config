@@ -1,0 +1,31 @@
+server:
+  port: 9040
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/distributed-payment-gateway-vault-db
+
+vault:
+  master-key: ${VAULT_MASTER_KEY}
+
+resilience4j:
+  thread-pool-bulkhead:
+    instances:
+      vault-card-processor:
+        core-thread-pool-size: 5
+        max-thread-pool-size: 10
+        queue-capacity: 20
+
+
+---
+spring:
+  config:
+    activate:
+      on-profile: k8s
+  datasource:
+    url: jdbc:postgresql://postgres.distributed-payment-gateway.svc.cluster.local:5432/distributed-payment-gateway-vault-db
+    username: vault_user
+    password: ${VAULT_DB_PASSWORD}
+
+vault:
+  master-key: ${VAULT_MASTER_KEY}
