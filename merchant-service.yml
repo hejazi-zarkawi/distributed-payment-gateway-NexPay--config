@@ -1,0 +1,28 @@
+server:
+  port: 9010
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/distributed-payment-gateway-merchant-db
+
+jwt:
+  secret-key: ${JWT_SECRET}
+webhoook:
+  secret-encryption-key: ${WEBHOOK_SECRET_ENCRYPTION_KEY}
+
+
+---
+spring:
+  config:
+    activate:
+      on-profile: k8s
+  datasource:
+    url: jdbc:postgresql://postgres.distributed-payment-gateway.svc.cluster.local:5432/distributed-payment-gateway-merchant-db
+    username: merchant_user
+    password: ${MERCHANT_DB_PASSWORD}
+
+jwt:
+  secret-key: ${JWT_SECRET}
+
+webhook:
+  secret-encryption-key: ${WEBHOOK_SECRET_ENCRYPTION_KEY}
