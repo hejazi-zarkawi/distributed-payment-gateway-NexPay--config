@@ -13,8 +13,8 @@ spring:
   datasource:
     hikari:
       maximum-pool-size: 10
-    username: ${PSQL_USER}
-    password: ${PSQL_PASSWORD}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
   data:
     redis:
