@@ -1,0 +1,109 @@
+server:
+  port: 8080
+
+app:
+  openapi:
+    title: API Gateway
+    description: Aggregated API documentation for all downstream services
+    version: v1
+  security:
+    trust-inbound-headers: false
+    public-routes:
+      - "/v1/auth/**"
+      - "/webhook/**"
+      - "/actuator/**"
+      - "/swagger-ui.html"
+      - "/swagger-ui/**"
+      - "/v3/api-docs/**"
+      - "/*/v3/api-docs"
+      
+  rate-limit:
+    method: fixed
+    use-case:
+      api-key:
+        requests-per-minute: 200
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: merchant-service
+              uri: ${MERCHANT_SERVICE_URI:lb://merchant-service}
+              predicates:
+                - Path=/v1/auth/**, /v1/merchants/**
+
+            - id: payment-service
+              uri: ${PAYMENT_SERVICE_URI:lb://payment-service}
+              predicates:
+                - Path=/v1/orders/**, /v1/payments/**
+
+            - id: vault-service
+              uri: ${VAULT_SERVICE_URI:lb://vault-service}
+              predicates:
+                - Path=/v1/vault/**
+
+            - id: operations-service
+              uri: ${OPERATIONS_SERVICE_URI:lb://operations-service}
+              predicates:
+                - Path=/webhook/**
+
+            - id: merchant-openapi
+              uri: ${MERCHANT_SERVICE_URI:lb://merchant-service}
+              predicates:
+                - Path=/merchant/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+
+            - id: payment-openapi
+              uri: ${PAYMENT_SERVICE_URI:lb://payment-service}
+              predicates:
+                - Path=/payment/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+
+            - id: vault-openapi
+              uri: ${VAULT_SERVICE_URI:lb://vault-service}
+              predicates:
+                - Path=/vault/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+
+            - id: operations-openapi
+              uri: ${OPERATIONS_SERVICE_URI:lb://operations-service}
+              predicates:
+                - Path=/operations/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+
+jwt:
+  secret-key: ${JWT_SECRET}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: merchant-service
+        url: /merchant/v3/api-docs
+
+      - name: payment-service
+        url: /payment/v3/api-docs
+
+      - name: vault-service
+        url: /vault/v3/api-docs
+
+      - name: operations-service
+        url: /operations/v3/api-docs
+
+    urls-primary-name: merchant-service
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: k8s
+
+jwt:
+  secret-key: ${JWT_SECRET}
