@@ -1,0 +1,122 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+    username: postgres
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  kafka:
+    topics:
+      payment: payments.events
+      order: orders.events
+      refund: refund.events
+      settlement: settlement.events
+    bootstrap-servers: localhost:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: distributed-payment-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.hejazi.distributed_payment_gateway.*"
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    hostname: localhost
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  tracing:
+    sampling:
+      probability: 0.1
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+feign:
+  httpclient:
+    hc5:
+      enabled: true
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+        
+logging:
+  level:
+    org.apache.kafka.clients: WARN
+    org.apache.kafka.common: WARN
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    doc-expansion: list
+    display-request-duration: true
+    persist-authorization: true
+    try-it-out-enabled: true
+    
+---
+
+spring:
+  config:
+    activate:
+      on-profile: k8s
+  data:
+    redis:
+      host: redis.distributed-payment-gateway.svc.cluster.local
+      port: 6379
+  kafka:
+    bootstrap-servers: kafka.distributed-payment-gateway.svc.cluster.local:9092
+  cloud:
+    discovery:
+      enabled: false
+  task:
+    scheduling:
+      pool:
+        size: 4
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+management:
+  zipkin:
+    tracing:
+      endpoint: http://zipkin.distributed-payment-gateway.svc.cluster.local:9411/api/v2/spans
+
+MERCHANT_SERVICE_URI: http://merchant-service
+PAYMENT_SERVICE_URI: http://payment-service
+VAULT_SERVICE_URI: http://vault-service
+OPERATIONS_SERVICE_URI: http://operations-service
